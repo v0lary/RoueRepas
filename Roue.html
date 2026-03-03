@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>La Roue des Repas Healthy & Express</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; background: #f0f9f4; color: #2c3e50; padding: 20px; }
+        #wheel-container { position: relative; width: 450px; height: 450px; margin: 20px; }
+        canvas { border-radius: 50%; border: 8px solid #ffffff; box-shadow: 0 10px 25px rgba(46, 204, 113, 0.2); }
+        #arrow { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); width: 0; height: 0; 
+                 border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 30px solid #27ae60; z-index: 10; }
+        button { padding: 15px 40px; font-size: 1.3rem; cursor: pointer; background: #27ae60; color: white; border: none; border-radius: 50px; font-weight: bold; transition: 0.2s; margin-top: 10px; box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3); }
+        button:hover { background: #219150; transform: scale(1.05); }
+        #result-box { margin-top: 25px; padding: 25px; background: #ffffff; color: #2c3e50; border-radius: 20px; width: 90%; max-width: 550px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border: 2px solid #eafaf1; }
+        #repas-nom { font-size: 1.6rem; font-weight: bold; color: #2ecc71; display: block; margin-top: 10px; }
+        #repas-info { font-size: 1rem; color: #7f8c8d; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+        .tag { display: inline-block; padding: 4px 10px; background: #e8f5e9; color: #2e7d32; border-radius: 5px; font-size: 0.8rem; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <h1>🥗 La Roue Équilibrée & Rapide</h1>
+    <p>100 repas sains, prêts en un clin d'œil</p>
+    
+    <div id="wheel-container">
+        <div id="arrow"></div>
+        <canvas id="wheel" width="450" height="450"></canvas>
+    </div>
+
+    <button onclick="spin()">QU'EST-CE QU'ON MANGE ?</button>
+
+    <div id="result-box">
+        <span id="repas-info">Faites tourner la roue</span>
+        <span id="repas-nom">Sain & Gourmand</span>
+        <div id="tag-container"></div>
+    </div>
+
+    <script>
+        const plats = [
+            "Pavé de saumon & Haricots verts vapeur", "Salade de Pois chiches, Tomates & Feta", "Omelette aux Épinards & Pain complet", "Poulet grillé, Brocolis & Quinoa", "Bowl : Riz, Thon, Avocat & Concombre",
+            "Lentilles corail au curry & Épinards", "Wrap Blé complet, Poulet & Crudités", "Salade de Lentilles, Carottes & Œuf dur", "Dos de cabillaud & Poêlée de courgettes", "Pâtes complètes au Pesto & Tomates cerises",
+            "Shakshuka maison (Tomate, Poivron, Œuf)", "Wok de Crevettes & Légumes croquants", "Omelette aux champignons & Salade verte", "Salade Grecque (Concombre, Feta, Olives)", "Steak haché 5%, Haricots plats & Riz",
+            "Gratin de chou-fleur léger au jambon", "Tofu sauté au Soja & Brocolis", "Papillote de poisson blanc & Poireaux", "Salade de Quinoa, Pommes & Noix", "Soupe de Potiron & Tartine de fromage frais",
+            "Émincé de dinde au curry & Ratatouille", "Bowl : Lentilles, Patate douce & Kale", "Sardines à l'huile (égouttées) & Pain noir", "Burrito Bowl (Riz, Haricots rouges, Maïs)", "Salade de pâtes, Brocolis & Poulet",
+            "Filet de poulet, Citron & Asperges", "Risotto aux Épinards & Parmesan", "Taboulé de chou-fleur & Menthe fraîche", "Poke Bowl : Saumon, Radis & Edamames", "Soupe de Lentilles corail & Coco",
+            "Ratatouille express & Œufs pochés", "Salade de Betteraves, Noix & Chèvre", "Omelette au thon & Salade de tomates", "Crevettes ail et persil & Riz complet", "Escalope de veau & Purée de carottes",
+            "Salade Niçoise (Thon, Œuf, Haricots)", "Chili Veggie (Lentilles, Maïs, Tomate)", "Cabillaud au four & Tomates provençales", "Bowl : Boulgour, Pois chiches & Courge", "Omelette fines herbes & Asperges",
+            "Wok de bœuf aux poivrons", "Salade de haricots verts, Thon & Oignons", "Gratin de courgettes léger", "Steak de thon & Riz basmati", "Poêlée de champignons, Ail & Persillade",
+            "Salade de riz, Tomates, Œuf & Maïs", "Poulet rôti & Salade de concombre", "Lentilles aux carottes & Jambon blanc", "Velouté de légumes verts & Pain grillé", "Brochettes de dinde & Courgettes poêlées",
+            "Salade de pâtes complètes, Feta & Basilic", "Saumon vapeur & Épinards frais", "Œufs brouillés, Tomates & Pain de seigle", "Bowl : Quinoa, Avocat & Pois chiches", "Pavé de colin & Riz aux petits pois",
+            "Salade de tomates, Mozzarella & Jambon cru", "Wok de dinde, Carottes & Noix de cajou", "Courgettes farcies au thon", "Bowl : Riz noir, Crevettes & Mangue", "Soupe de Tomates & Mascarpone léger",
+            "Salade de Lentilles, Avocat & Saumon fumé", "Filet de lieu & Purée de brocolis", "Salade de Pois chiches & Poivrons rôtis", "Omelette au fromage de chèvre & Épinards", "Dinde sautée & Mélange de légumes d'hiver",
+            "Salade de quinoa, Feta & Grenade", "Poisson grillé & Salade de fenouil", "Bowl : Pâtes complètes, Poulet & Zucchini", "Risotto aux petits pois & Menthe", "Salade de haricots rouges, Oignons & Maïs",
+            "Steak haché, Tomates cerises & Boulgour", "Frittata aux légumes d'été", "Salade de Chou rouge, Pommes & Poulet", "Pavé de truite & Haricots verts au citron", "Mélange de céréales & Poêlée de champignons",
+            "Salade de tomates cerises, Bille de mozza & Basilic", "Filet de poulet au thym & Ratatouille", "Bowl : Riz complet, Œuf dur & Épinards", "Tartine avocat & Œuf poché", "Salade de pois chiches, Concombre & Menthe",
+            "Poisson blanc en papillote & Carottes", "Salade de pâtes, Courgettes & Ricotta", "Sauté de porc léger & Brocolis", "Soupe de carottes au cumin & Pois chiches grillés", "Salade de riz au saumon & Aneth",
+            "Omelette aux poivrons & Salade de mâche", "Crevettes coco-citronnelle & Riz", "Bowl : Lentilles, Tomates & Mozzarella", "Dinde à la moutarde & Haricots verts", "Salade de chou blanc, Sésame & Poulet",
+            "Filet de merlu & Écrasé de potiron", "Salade de pâtes complètes & Légumes grillés", "Risotto aux asperges vertes", "Bowl : Quinoa, Saumon & Concombre", "Omelette aux asperges & Parmesan",
+            "Salade de haricots blancs, Tomates & Thon", "Bouillon de légumes, Poulet & Vermicelles", "Gratin d'épinards à la ricotta", "Bowl : Riz, Haricots noirs & Salsa", "Salade composée : Œuf, Noix, Pomme & Salade"
+        ];
+
+        const canvas = document.getElementById('wheel');
+        const ctx = canvas.getContext('2d');
+        const count = 100;
+        let currentRotation = 0;
+
+        function drawWheel() {
+            const arc = (2 * Math.PI) / count;
+            for (let i = 0; i < count; i++) {
+                ctx.beginPath();
+                ctx.fillStyle = i % 2 === 0 ? "#2ecc71" : "#27ae60";
+                if (i % 10 === 0) ctx.fillStyle = "#f1c40f";
+                ctx.moveTo(225, 225);
+                ctx.arc(225, 225, 225, i * arc, (i + 1) * arc);
+                ctx.fill();
+            }
+        }
+
+        function spin() {
+            const spinAngle = Math.floor(Math.random() * 360) + 5000;
+            currentRotation += spinAngle;
+            canvas.style.transform = `rotate(${currentRotation}deg)`;
+            canvas.style.transition = "transform 4s cubic-bezier(0.15, 0, 0.15, 1)";
+
+            document.getElementById('repas-nom').innerText = "Choix en cours...";
+
+            setTimeout(() => {
+                const actualAngle = currentRotation % 360;
+                const index = Math.floor(((360 - actualAngle + 270) % 360) / (360 / count));
+                document.getElementById('repas-info').innerText = "Verdict nutrition :";
+                document.getElementById('repas-nom').innerText = plats[index % count];
+                document.getElementById('tag-container').innerHTML = '<span class="tag">✓ Rapide</span> <span class="tag">✓ Équilibré</span> <span class="tag">✓ Sain</span>';
+            }, 4000);
+        }
+
+        drawWheel();
+    </script>
+</body>
+</html>
